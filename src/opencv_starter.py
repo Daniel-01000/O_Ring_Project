@@ -2,8 +2,23 @@ import cv2 as cv
 import numpy as np
 import time
 
+# Function: compute_histogram
+# Counts how many times each grayscale value from 0 to 255 appers 
+# in the image by checking every pixel manually.
+# Returns an array of 256 values representing pixel counts.
+def compute_histogram(img):
+    hist = np.zeros(256)
+
+    for x in range(img.shape[0]):
+        for y in range(img.shape[1]):
+            pixel_value = img[x, y]
+            hist[pixel_value] += 1
+
+    return hist
+
+
 #read in an image into memory
-img = cv.imread('c:/users/simon/Pictures/cameraman.png',0)
+img = cv.imread('images/Orings/Oring1.jpg',0)
 copy = img.copy()
 #check out some of its pixel values...img[x,y]..try different x and y values
 x = 100

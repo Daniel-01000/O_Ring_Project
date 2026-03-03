@@ -2,49 +2,60 @@ import cv2 as cv
 import numpy as np
 import time
 
-# Function: compute_histogram
-# Counts how many times each grayscale value from 0 to 255 appers 
-# in the image by checking every pixel manually.
-# Returns an array of 256 values representing pixel counts.
+
+# count how many times each gray value appears
 def compute_histogram(img):
     hist = np.zeros(256)
 
     for x in range(img.shape[0]):
         for y in range(img.shape[1]):
-            pixel_value = img[x, y]
-            hist[pixel_value] += 1
+            value = img[x, y]
+            hist[value] += 1
 
     return hist
 
 
-#read in an image into memory
-img = cv.imread('images/Orings/Oring1.jpg',0)
+# load image in grayscale
+img = cv.imread('images/Orings/Oring1.jpg', 0)
+
+if img is None:
+    print("Image not found")
+    exit()
+
 copy = img.copy()
-#check out some of its pixel values...img[x,y]..try different x and y values
-x = 100
-y = 100
-pix = img[x,y]
-print("The pixel value at image location [" + str(x) + "," + str(y) + "] is:" + str(pix))
 
-#implement thresholding ourselves using loops (soooo slow in python)
+# build histogram
+hist = compute_histogram(copy)
+
+# split into dark and bright parts
+dark_half = hist[0:128]
+bright_half = hist[128:256]
+
+# find main peak in each half
+first_peak = np.argmax(dark_half)
+second_peak = np.argmax(bright_half) + 128
+
+# choose threshold between peaks
+auto_thresh = int((first_peak + second_peak) / 2)
+
+print("Dark peak:", first_peak)
+print("Bright peak:", second_peak)
+print("Threshold:", auto_thresh)
+
+# manual thresholding
 before = time.time()
-thresh = 100
-for x in range(0, img.shape[0]):
-    for y in range(0, img.shape[1]):
-        if img[x,y] > thresh:
-            img[x,y] = 255
+
+for x in range(img.shape[0]):
+    for y in range(img.shape[1]):
+        if img[x, y] > auto_thresh:
+            img[x, y] = 255
         else:
-            img[x,y] = 0
-after = time.time()
-print("Time taken to process hand coded thresholding: " + str(after-before))
-cv.imshow('thresholded image 1',img)
-cv.waitKey(0)
+            img[x, y] = 0
 
-#now lets use the opencv built in function to threshold the image
-before = time.time()
-ret,copy = cv.threshold(copy,100,255,cv.THRESH_BINARY)
 after = time.time()
-print("Time taken to process opencv built in thresholding: " + str(after-before))
-cv.imshow('thresholded image 2',copy)
+
+print("Processing time:", after - before)
+
+cv.imshow("Thresholded Image", img)
 cv.waitKey(0)
 cv.destroyAllWindows()

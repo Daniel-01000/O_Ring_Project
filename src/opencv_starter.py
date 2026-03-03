@@ -38,7 +38,41 @@ def erosion(img):
     return output
 
 
-# load image
+def connected_components(img):
+    rows, cols = img.shape
+    labels = np.zeros((rows, cols))
+    current_label = 1
+    sizes = {}
+
+    for x in range(rows):
+        for y in range(cols):
+
+            if img[x, y] == 255 and labels[x, y] == 0:
+
+                stack = [(x, y)]
+                sizes[current_label] = 0
+
+                while stack:
+                    i, j = stack.pop()
+
+                    if (0 <= i < rows and 0 <= j < cols and
+                        img[i, j] == 255 and labels[i, j] == 0):
+
+                        labels[i, j] = current_label
+                        sizes[current_label] += 1
+
+                        stack.append((i+1, j))
+                        stack.append((i-1, j))
+                        stack.append((i, j+1))
+                        stack.append((i, j-1))
+
+                current_label += 1
+
+    return labels, sizes
+
+
+
+
 img = cv.imread('images/Orings/Oring1.jpg', 0)
 
 if img is None:
@@ -47,7 +81,7 @@ if img is None:
 
 copy = img.copy()
 
-# histogram
+# Histogram threshold
 hist = compute_histogram(copy)
 
 dark_half = hist[0:128]
@@ -60,9 +94,9 @@ auto_thresh = int((first_peak + second_peak) / 2)
 
 print("Threshold:", auto_thresh)
 
-# thresholding
 before = time.time()
 
+# Manual threshold
 for x in range(img.shape[0]):
     for y in range(img.shape[1]):
         if img[x, y] > auto_thresh:
@@ -70,7 +104,7 @@ for x in range(img.shape[0]):
         else:
             img[x, y] = 0
 
-# invert so ring is white
+# Invert so ring is white
 for x in range(img.shape[0]):
     for y in range(img.shape[1]):
         if img[x, y] == 0:
@@ -78,14 +112,31 @@ for x in range(img.shape[0]):
         else:
             img[x, y] = 0
 
-# closing = dilation then erosion
+# Binary closing
 img = dilation(img)
 img = erosion(img)
+
+# Connected components
+labels, sizes = connected_components(img)
+
+print("Regions found:", len(sizes))
+print("Region sizes:", sizes)
+
+# Keep largest region only
+largest_label = max(sizes, key=sizes.get)
+
+rows, cols = img.shape
+output = np.zeros((rows, cols))
+
+for x in range(rows):
+    for y in range(cols):
+        if labels[x, y] == largest_label:
+            output[x, y] = 255
 
 after = time.time()
 
 print("Processing time:", after - before)
 
-cv.imshow("Result", img)
+cv.imshow("Final Result", output.astype(np.uint8))
 cv.waitKey(0)
 cv.destroyAllWindows()
